@@ -16,9 +16,9 @@ public class Table {
     public final String name;
     public final boolean isAbstract;
     /**
-     * A dependant table is a table that can't exist in the database without a hard link to it
+     * A dependent table is a table that can't exist in the database without a hard link to it
      */
-    public final boolean dependant;
+    public final boolean dependent;
     public final Table from;
     public final Table root;
     private final Event insert;
@@ -45,7 +45,7 @@ public class Table {
     public final List<Constraint> externs;
     public final List<Table> subtypes;
     /**
-     * A hard link is a link to a dependant table that can't be changed rather than set to null by delete of the linked table
+     * A hard link is a link to a dependent table that can't be changed rather than set to null by delete of the linked table
      */
     public final List<Column> hardlinks;
 
@@ -61,7 +61,7 @@ public class Table {
             String sqldata,
             String name,
             boolean isAbstract,
-            boolean dependant,
+            boolean dependent,
             Table from,
             Event insert,
             Event update,
@@ -82,7 +82,7 @@ public class Table {
         this.sqldata = sqldata == null ? "" : sqldata + "\n";
         this.name = name;
         this.isAbstract = isAbstract;
-        this.dependant = dependant;
+        this.dependent = dependent;
         this.from = from;
         this.insert = insert;
         this.update = update;

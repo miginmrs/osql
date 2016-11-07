@@ -33,7 +33,7 @@ public class TableParser implements Function<Parser, Table> {
     private static final String endID = "end";
     private static final String starID = "star";
     private static final String abstractID = "abstract";
-    private static final String dependantID = "dependant";
+    private static final String dependentID = "dependent";
     private static final String interfacesID = "interfaces";
     private static final Pattern sqlPattern = Pattern.compile("(?:\\s*sql\\s+'''(?<" + sqlID + ">.*?)''')?", Pattern.DOTALL);
     private static final Pattern paramsStartPattern = Pattern.compile("\\s*@(?<" + nameID + ">\\w+)(?<" + starID + ">\\*)?\\s*\\(" + "(?<" + endID + ">\\))?", Pattern.DOTALL);
@@ -42,7 +42,7 @@ public class TableParser implements Function<Parser, Table> {
             + "\\s*(?:(?<" + nextID + ">,)|\\))", Pattern.DOTALL);
     private static final Pattern startPattern = Pattern.compile(
             "\\s*(?:(?<" + abstractID + ">abstract)\\s+)?"
-                    +"\\s*(?:(?<" + dependantID + ">ref)\\s+)?"
+                    +"\\s*(?:(?<" + dependentID + ">ref)\\s+)?"
                     + "(?<" + typeID + ">\\S+)\\s+(?<" + nameID + ">\\w+)"
                     + "(?:\\s+from\\s+(?<" + fromID + ">.*?))?"
                     + "(?:\\s+uses\\s+(?<" + interfacesID + ">.*?))?"
@@ -205,7 +205,7 @@ public class TableParser implements Function<Parser, Table> {
                     sql,
                     name,
                     isAbstract || m.group(abstractID) != null,
-                    m.group(dependantID) != null,
+                    m.group(dependentID) != null,
                     fromTable,
                     insert,
                     update,
@@ -279,14 +279,14 @@ public class TableParser implements Function<Parser, Table> {
                         kernel.type = idType;
                         kernel.table = typeTable;
                         if(col.isComposition())
-                            if(typeTable.dependant) {
+                            if(typeTable.dependent) {
                                 Table referenced = typeTable;
                                 do  {
                                     database.tableManagers.get(referenced.name).hardlinks.add(col);
                                     referenced = referenced.from;
-                                } while(referenced!=null && referenced.dependant);
+                                } while(referenced!=null && referenced.dependent);
                             }
-                            else throw new ParseException("Table '"+typeTable.name+"' is not dependant");
+                            else throw new ParseException("Table '"+typeTable.name+"' is not dependent");
                         tableManager.constraints.add(new Constraint(col, typeTable, true, ++tableManager.ibfk[0]));
                     }
                     Column cloned = table.columns.get(col.sname);
@@ -313,7 +313,7 @@ public class TableParser implements Function<Parser, Table> {
             } catch (ParseException e) {
                 fieldException = e;
             }
-            if(table.dependant) {
+            if(table.dependent) {
                 Column.Kernel $ref = new Column.Kernel("$ref", "text");
                 Column.Kernel $rid = new Column.Kernel("$rid", idType);
                 columns.put("$ref", new Column($ref, false, false, false, table, null, null, false));
@@ -415,9 +415,9 @@ public class TableParser implements Function<Parser, Table> {
                         kernel.table = table;
                     }
                     if(col.isComposition())
-                        if(table.dependant)
+                        if(table.dependent)
                             tableManager.hardlinks.add(col);
-                        else throw new ParseException("Table '"+table.name+"' is not dependant");
+                        else throw new ParseException("Table '"+table.name+"' is not dependent");
                     TableManager manager = database.tableManagers.get(col.getContainer().name);
                     Constraint constraint = new Constraint(col, table, false, ++manager.ibfk[0]);
                     manager.constraints.add(constraint);

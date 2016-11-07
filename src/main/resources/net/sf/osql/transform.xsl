@@ -74,7 +74,7 @@
 	</xsl:template>
 
 	<xsl:template match="table/triggers/trigger[@action='insert'][@event='after']" mode="normal" priority="3">
-		<x:if test="subtypes/subtype | triggers/trigger[@event='after:insert'] | /table[@dependant='true']">
+		<x:if test="subtypes/subtype | triggers/trigger[@event='after:insert'] | /table[@dependent='true']">
 			<xsl:apply-templates mode="normal"/>
 		</x:if>
 	</xsl:template>
@@ -103,8 +103,8 @@
 		</x:if>
 	</xsl:template>
 
-	<xsl:template match="link" mode="normal"></xsl:template>
-	<xsl:template match="var" mode="normal"></xsl:template>
+	<xsl:template match="link" mode="normal"/>
+	<xsl:template match="var" mode="normal"/>
 	<xsl:template match="var" mode="resolv"><xsl:apply-templates mode="normal"/></xsl:template>
 
 	<xsl:template match="call" mode="normal">
@@ -156,8 +156,8 @@
 		</x:if>
 	</xsl:template>
 
-	<xsl:template match="link[@name='dependant']" mode="normal" priority="1">
-		<x:if test="@dependant">
+	<xsl:template match="link[@name='dependent']" mode="normal" priority="1">
+		<x:if test="@dependent='true'">
 			<xsl:apply-templates mode="normal"/>
 		</x:if>
 	</xsl:template>
@@ -187,7 +187,7 @@
 	</xsl:template>
 
 	<xsl:template match="link[@name='inherited']" mode="normal" priority="1">
-		<x:for-each select="columns/column[not(@new='true')]">
+		<x:for-each select="columns/column[@present='true'][not(@new='true')]">
 			<xsl:apply-templates mode="normal"/>
 		</x:for-each>
 	</xsl:template>
@@ -200,6 +200,12 @@
 
 	<xsl:template match="link[@name='abstract']" mode="normal" priority="1">
 		<x:if test="@abstract='true'">
+			<xsl:apply-templates mode="normal"/>
+		</x:if>
+	</xsl:template>
+
+	<xsl:template match="link[@name='concrete']" mode="normal" priority="1">
+		<x:if test="not(@abstract='true')">
 			<xsl:apply-templates mode="normal"/>
 		</x:if>
 	</xsl:template>
@@ -394,7 +400,7 @@
 
 	<xsl:template match="link[@name='inherit']//link[@name='subtype']//use[@name='inherit']" mode="normal" priority="3">
 		<x:for-each select="/table/columns/column[@inherit='true']">
-			<item><xsl:apply-templates mode="resolv" select="(./ancestor::var[@name='inherit'][1]|./preceding::var[@name='inherit'][1])[last()]"/></item>
+			<item><x:value-of select="@name"/>.<xsl:apply-templates mode="resolv" select="(./ancestor::var[@name='inherit'][1]|./preceding::var[@name='inherit'][1])[last()]"/></item>
 		</x:for-each>
 	</xsl:template>
 

@@ -43,12 +43,12 @@ CREATE TRIGGER `after<use name="name"/>insert` AFTER INSERT ON `<use name="name"
 BEGIN<link name="parent">
 	SET @id = NEW.`id`;
 	CASE NEW.`subtype`<link name="subtype">
-		WHEN '<use name="name"/>' THEN INSERT INTO `<use name="name"/>` VALUES ();</link><link name="abstract">
-		ELSE BEGIN
+		WHEN '<use name="name"/>' THEN INSERT INTO `<use name="name"/>` VALUES ();</link>
+		ELSE BEGIN<link name="abstract">
 			DECLARE msg text DEFAULT concat('Unknown type "',NEW.`subtype`,'" for after insert trigger');
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;
-		END;</link>
-	END CASE;</link><link name="dependant">
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;</link>
+		END;
+	END CASE;</link><link name="dependent">
 	CASE @$ref<link name="link">
 		WHEN '<use name="sname"/>' THEN
 			UPDATE `<use name="document"/>` SET `<use name="name"/>`=NEW.`id` WHERE `id`=@$rid;
@@ -80,7 +80,7 @@ BEGIN<link name="beforeupdate">
 		SELECT * 
 		FROM <use name="from"/> 
 		WHERE (`id` = OLD.`id`)<link name="inherited">
-		AND (`<use name="name"/>` IS NULL AND NEW.`<use name="name"/>` IS NULL OR `<use name="name"/>` = NEW.`<use name="name"/>`)</link>
+		AND (@<use name="name"/> IS NULL AND NEW.`<use name="name"/>` IS NULL OR @<use name="name"/> = NEW.`<use name="name"/>`)</link>
 	) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= 'Invalid inherited values for before update trigger';
 	END IF;</link></link><link name="compositions">
@@ -95,11 +95,12 @@ END $$
 DROP TRIGGER IF EXISTS `after<use name="name"/>update`$$
 CREATE TRIGGER `after<use name="name"/>update` AFTER UPDATE ON `<use name="name"/>` FOR EACH ROW
 BEGIN<link name="inherit">
-	CASE OLD.`subtype`<link name="subtype">
-		<var name="inherit">
+	CASE OLD.`subtype`<link name="subtype"><var name="inherit">
 			`<use name="name"/>` = NEW.`<use name="name"/>`</var>
 		WHEN '<use name="name"/>' THEN UPDATE `<use name="name"/>` SET <join delimiter=", "><use name="inherit"/></join>
-			WHERE `id`=OLD.`id`;</link>
+			WHERE `id`=OLD.`id`;</link><link name="concrete">
+		ELSE BEGIN
+		END;</link>
 	END CASE;</link><link name="afterupdate">
 	BEGIN
 		<use name="afterupdate"/>

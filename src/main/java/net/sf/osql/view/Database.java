@@ -1,73 +1,63 @@
 package net.sf.osql.view;
 
 import net.sf.osql.model.Table;
+import net.sf.osql.view.exceptions.DialectException;
 import org.w3c.dom.Document;
 
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.StringWriter;
+import java.util.*;
+import java.util.function.Function;
 
 public class Database {
-    private final Dialect dialect;
+    private final DialectProvider dialectProvider;
+
+    @FunctionalInterface
+    interface DialectProvider {
+        Dialect get(String name) throws DialectException;
+    }
+
     private final XmlViewer viewer;
+    private final Map<String, Document> tableDocuments = new HashMap<>();
+    private final Map<String, Object> tableLocks = new HashMap<>();
+    private final List<Table> tables;
+    private final Function<Document, String> stringify;
 
-    private class TableViewImpl implements TableView {
-        private final Table table;
-        private final Document document;
+    Database(List<Table> tables, XmlViewer xmlViewer, DialectProvider dialectProvider, Function<Document, String> stringify) {
+        this.viewer = xmlViewer;
+        this.dialectProvider = dialectProvider;
+        this.tables = tables;
+        this.stringify = stringify;
+    }
 
-        public TableViewImpl(Table table, Document document) {
-            this.table = table;
-            this.document = document;
-        }
+    public DbView use(String name) throws DialectException {
+        return new DbView(this, dialectProvider.get(name));
+    }
 
-        private String applyTransformer(Transformer transformer) {
-            StringWriter writer = new StringWriter();
-            try {
-                transformer.transform(new DOMSource(document), new StreamResult(writer));
-            } catch (TransformerException e) {
-                return null;
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    Document getTableDocument(Table table) {
+        String name = table.name;
+        Document document = tableDocuments.get(name);
+        if (document != null)
+            return document;
+        Object lock;
+        synchronized (this) {
+            lock = tableLocks.get(name);
+            if (lock == null) {
+                lock = new Object();
+                tableLocks.put(name, lock);
             }
-            return writer.getBuffer().toString();
         }
-
-        @Override
-        public String showDefinition() {
-            return applyTransformer(dialect.definition);
+        synchronized (lock) {
+            document = tableDocuments.get(name);
+            if (document == null) {
+                document = viewer.apply(table);
+                tableDocuments.put(name, document);
+            }
+            return document;
         }
-
-        @Override
-        public String showConstraints() {
-            return applyTransformer(dialect.constraints);
-        }
-
-        @Override
-        public String showInsertions() {
-            return applyTransformer(dialect.insertions);
-        }
-
-        @Override
-        public String showTriggers() {
-            return applyTransformer(dialect.triggers);
-        }
-
-        @Override
-        public String showITable() {
-            return applyTransformer(dialect.itable);
-        }
-
-        @Override
-        public Table getTable() { return table; }
-
     }
 
-    public Database(Dialect dialect, XmlViewer viewer) {
-        this.dialect = dialect;
-        this.viewer = viewer;
-    }
-
-    public TableView render(Table table) {
-        return new TableViewImpl(table, viewer.apply(table));
+    public String getTables() {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<tables>\n"+tables.stream().map(this::getTableDocument).map(stringify).reduce("", String::concat)+"\n</tables>";
     }
 }

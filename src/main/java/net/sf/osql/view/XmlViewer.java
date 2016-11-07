@@ -13,7 +13,7 @@ class XmlViewer implements Function<Table, Document> {
     private final DocumentBuilder builder;
     private final Collection<Table> tables;
 
-    public XmlViewer(DocumentBuilder builder, Collection<Table> tables) {
+    XmlViewer(DocumentBuilder builder, Collection<Table> tables) {
         this.builder = builder;
         this.tables = tables;
     }
@@ -25,7 +25,7 @@ class XmlViewer implements Function<Table, Document> {
         root.setAttribute("name", table.name);
         if(table.from != null) root.setAttribute("from", table.from.name);
         root.setAttribute("abstract", table.isAbstract ? "true" : "false");
-        root.setAttribute("dependant", table.dependant ? "true" : "false");
+        root.setAttribute("dependent", table.dependent ? "true" : "false");
         Element sql = document.createElement("sql");
         sql.appendChild(document.createCDATASection(table.sqldata));
         root.appendChild(sql);
@@ -36,6 +36,15 @@ class XmlViewer implements Function<Table, Document> {
             subtypes.appendChild(subtypeElement);
         });
         root.appendChild(subtypes);
+        if(table.from != null) {
+            Element siblings = document.createElement("siblings");
+            table.from.subtypes.forEach(subtype -> {
+                Element siblingElement = document.createElement("sibling");
+                siblingElement.setAttribute("name", subtype.name);
+                siblings.appendChild(siblingElement);
+            });
+            root.appendChild(siblings);
+        }
         Element columns = document.createElement("columns");
         table.columns.forEach((sname, column) -> {
             Element columnElement = document.createElement("column");
