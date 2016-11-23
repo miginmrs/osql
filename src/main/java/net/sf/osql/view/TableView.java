@@ -1,8 +1,7 @@
 package net.sf.osql.view;
 
-import net.sf.osql.model.Table;
+public interface TableView extends ITableView {
 
-public interface TableView {
     String showDefinition();
 
     String showConstraints();
@@ -13,5 +12,4 @@ public interface TableView {
 
     String showITable();
 
-    Table getTable();
 }

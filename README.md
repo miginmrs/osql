@@ -37,7 +37,7 @@ java -jar osql.jar -i base.osql -m hard -d mysql | mysql -uuser -ppass
     <dependency>
       <groupId>net.sf.osql</groupId>
       <artifactId>osql</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
       <scope>compile</scope>
     </dependency>
     ...

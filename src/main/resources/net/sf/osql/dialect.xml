@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<ctx:document
+        xmlns:xslm="alias://xsl/pure"
+        xmlns:xsli="alias://xsl/item"
+        xmlns:ctx="http://xsltiny.sf.net/context"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+				alias://xsl/item ../xsltiny/schema/xslitem.xsd
+				alias://xsl/pure  ../xsltiny/schema/xslpure.xsd
+				http://xsltiny.sf.net/context ../xsltiny/schema/context.xsd">
+    <ctx:properties/>
+    <ctx:default-context>
+        <ctx:link name="trigger" link="yes" test="/table/triggers/trigger[@event=$link]"/>
+        <ctx:use name="from"><xslm:value-of select="/table/@from"/></ctx:use>
+        <ctx:use name="trigger" link="yes">
+            <xslm:value-of select="/table/triggers/trigger[@event=$link]"/>
+        </ctx:use>
+        <ctx:use name="into"><xslm:value-of select="/table/insertions/@into"/></ctx:use>
+        <ctx:list name="inherits">
+            <xsli:for-each select="/table/columns/column[@inherit='true']">
+                <ctx:item><xslm:value-of select="concat(@name,'.',$v_inherit)"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+    </ctx:default-context>
+    <ctx:context name="table" path="/table">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:attribute name="from" path="@from"/>
+        <ctx:attribute name="abstract" path="@abstract"/>
+        <ctx:attribute name="dependent" path="@dependent"/>
+        <ctx:attribute name="sql" path="sql"/>
+        <ctx:link name="root" test="not(@from)"/>
+        <ctx:link name="child" test="@from"/>
+        <ctx:link name="dependent" test="@dependent='true'"/>
+        <ctx:link name="parent" test="subtypes/subtype"/>
+        <ctx:link name="abstract" test="@abstract='true'"/>
+        <ctx:link name="notnull" test="@abstract='true'"/>
+        <ctx:link name="concrete" test="not(@abstract='true')"/>
+        <!-- default is hard -->
+        <ctx:link name="verify-inherited" test="not($ctx_properties/property[@name='mode' and @value='soft']) and columns/column[@inherit='true']"/>
+        <ctx:link name="compositions" test="columns/column[@composition='true']"/>
+        <ctx:link name="inherit" test="columns/column[@inherit='true']"/>
+        <ctx:link name="before:insert" section="triggers" test="true()"/>
+        <ctx:link name="after:insert" section="triggers" test="subtypes/subtype | triggers/trigger[@event='after:insert'] | /table[@dependent='true']"/>
+        <ctx:link name="before:update" section="triggers" test="/table[@from] | triggers/trigger[@event='before:update'] | columns/column[@composition='true']"/>
+        <ctx:link name="after:update" section="triggers" test="triggers/trigger[@event='after:update'] | columns/column[@inherit='true']"/>
+        <ctx:link name="before:delete" section="triggers" test="triggers/trigger[@event='before:delete']"/>
+        <ctx:link name="after:delete" section="triggers" test="/table[@from] | triggers/trigger[@event='after:delete'] | columns/column[@composition='true']"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:use name="type"><xslm:value-of select="@type"/></ctx:use>
+        <ctx:list name="siblings">
+            <xsli:for-each select="siblings/sibling">
+                <ctx:item><xslm:value-of select="@name"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+        <ctx:list name="subtypes">
+            <xsli:for-each select="subtypes/subtype">
+                <ctx:item><xslm:value-of select="@name"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+        <ctx:list name="compositions">
+            <xsli:for-each select="columns/column[@composition='true']">
+                <ctx:item><xslm:value-of select="@name"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+    </ctx:context>
+    <ctx:context name="subtype" parent="table" path="subtypes/subtype">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+    </ctx:context>
+    <ctx:context name="sibling" parent="table" path="siblings/sibling">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+    </ctx:context>
+    <ctx:context name="column" parent="table" path="columns/column">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:attribute name="table" path="@table"/>
+        <ctx:attribute name="present" path="@present"/>
+        <ctx:attribute name="type" path="@type"/>
+        <ctx:attribute name="null" path="@null"/>
+        <ctx:attribute name="unique" path="@unique"/>
+        <ctx:attribute name="default" path="@default"/>
+        <ctx:attribute name="comment" path="@comment"/>
+        <ctx:attribute name="new" path="@new"/>
+        <ctx:attribute name="composition" path="@composition"/>
+        <ctx:attribute name="inherit" path="@inherit"/>
+        <ctx:link name="new" test="@new='true'"/>
+        <ctx:link name="reference" test="@table"/>
+        <ctx:link name="inherited" test="@present='true' and not(@new='true')"/>
+        <ctx:link name="composition" test="@composition='true'"/>
+        <ctx:link name="present" test="@present='true'"/>
+        <ctx:link name="notnull" test="not(@null='true')"/>
+        <ctx:link name="unique" test="@unique='true'"/>
+        <ctx:link name="default" test="@default"/>
+        <ctx:link name="comment" test="@comment"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:use name="type"><xslm:value-of select="@type"/></ctx:use>
+        <ctx:use name="table"><xslm:value-of select="@table"/></ctx:use>
+        <ctx:use name="default"><xslm:value-of select="@default"/></ctx:use>
+        <ctx:use name="comment"><xslm:value-of select="@comment"/></ctx:use>
+    </ctx:context>
+    <ctx:context name="link" parent="table" path="links/column">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:attribute name="sname" path="@sname"/>
+        <ctx:attribute name="table" path="@table"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:use name="sname"><xslm:value-of select="@sname"/></ctx:use>
+        <ctx:use name="table"><xslm:value-of select="@table"/></ctx:use>
+    </ctx:context>
+    <ctx:context name="index" parent="table" path="index/list">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:list name="columns">
+            <xsli:for-each select="column">
+                <ctx:item><xslm:value-of select="@name"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+    </ctx:context>
+    <ctx:context name="unique" parent="table" path="unique/list">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:list name="columns">
+            <xsli:for-each select="column">
+                <ctx:item><xslm:value-of select="@name"/></ctx:item>
+            </xsli:for-each>
+        </ctx:list>
+    </ctx:context>
+    <ctx:context name="index_column" parent="index" path="column" length="1">
+        <ctx:attribute name="name" path="@name"/>
+    </ctx:context>
+    <ctx:context name="unique_column" parent="unique" path="column" length="1">
+        <ctx:attribute name="name" path="@name"/>
+    </ctx:context>
+    <ctx:context name="constraint" parent="table" path="constraints/constraint">
+        <ctx:attribute name="number" path="@number"/>
+        <ctx:attribute name="reference" path="@reference"/>
+        <ctx:attribute name="target" path="@target"/>
+        <ctx:attribute name="composition" path="@composition"/>
+        <ctx:link name="setnull" test="@composition"/>
+        <ctx:use name="name"><xslm:value-of select="/table/@name"/></ctx:use>
+        <ctx:use name="number"><xslm:value-of select="@number"/></ctx:use>
+        <ctx:use name="reference"><xslm:value-of select="@reference"/></ctx:use>
+        <ctx:use name="target"><xslm:value-of select="@target"/></ctx:use>
+    </ctx:context>
+    <ctx:context name="insertion" parent="table" path="insertions/insertion">
+    </ctx:context>
+    <ctx:context name="entry" parent="insertion" path="/table/path/entry | entry">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:use name="string"><xslm:value-of select="@string"/></ctx:use>
+        <ctx:use name="value">
+            <xslm:value-of select="if(@value) then @value else if(@string) then $v_string else $v_null"/>
+        </ctx:use>
+    </ctx:context>
+    <ctx:context name="pentry" path="/table/path/entry">
+        <ctx:attribute name="name" path="@name"/>
+        <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
+        <ctx:use name="string"><xslm:value-of select="@string"/></ctx:use>
+        <ctx:use name="value">
+            <xslm:value-of select="if(@value) then @value else if(@string) then $v_string else $v_null"/>
+        </ctx:use>
+    </ctx:context>
+</ctx:document>

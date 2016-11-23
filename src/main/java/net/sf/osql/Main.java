@@ -4,17 +4,13 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import net.sf.osql.model.Table;
 import net.sf.osql.parser.FieldParser;
 import net.sf.osql.parser.Parser;
 import net.sf.osql.parser.TableParser;
 import net.sf.osql.parser.exceptions.TypeException;
-import net.sf.osql.view.Database;
-import net.sf.osql.view.DbView;
-import net.sf.osql.view.SqlViewer;
-import net.sf.osql.view.TableView;
+import net.sf.osql.view.*;
 import net.sf.osql.view.exceptions.DialectException;
 import org.apache.commons.cli.*;
 
@@ -64,7 +60,14 @@ public class Main {
 
     private static Argument getArgument(String[] args){
         CommandLineParser parser = new BasicParser();
-        HelpFormatter formatter = new HelpFormatter();
+        HelpFormatter formatter = new HelpFormatter(){
+            @Override
+            public void printHelp(String cmdLineSyntax, Options options) {
+                PrintWriter pw = new PrintWriter(System.err);
+                this.printHelp(pw, 80, cmdLineSyntax, null, options, 1, 3, null, false);
+                pw.flush();
+            }
+        };
         Options options = new Options();
         options.addOption(new Option("i", "input", true, "input file path"));
         options.addOption(new Option("o", "output", true, "output file path"));
@@ -77,25 +80,25 @@ public class Main {
             cmd = parser.parse(options, args);
             if(!cmd.hasOption('h')) {
                 if (!cmd.hasOption('m'))
-                    throw new ParseException("mode option required");
+                    throw new ParseException("Mode option required");
                 if (!Arrays.asList("soft", "hard").contains(cmd.getOptionValue('m')))
-                    throw new ParseException("bad mode option value");
+                    throw new ParseException("Bad mode option value");
                 if (cmd.hasOption('d') == cmd.hasOption('x')) {
                     if(!cmd.hasOption('x'))
-                        throw new ParseException("must either specify the dialect or choose to output xml");
+                        throw new ParseException("Must either specify the dialect or choose to output xml");
                     else if(!cmd.hasOption('o'))
-                        throw new ParseException("when xml and dialect are the two present the output option is required");
+                        throw new ParseException("When xml and dialect are the two present the output option is required");
                 }
             }
         } catch (ParseException e) {
             System.err.println(e.getMessage());
-            formatter.printHelp("utility-name", options);
+            formatter.printHelp("osql", options);
             System.exit(1);
             return null;
         }
 
         if(cmd.hasOption('h')) {
-            formatter.printHelp("utility-name", options);
+            formatter.printHelp("osql", options, false);
             System.exit(0);
         }
 
@@ -105,7 +108,7 @@ public class Main {
             return new Argument(in, out, cmd.getOptionValue('m'), cmd.getOptionValue('d'), cmd.hasOption('x'));
         } catch (FileNotFoundException e) {
             System.err.println("File not found "+e.getMessage());
-            formatter.printHelp("utility-name", options);
+            formatter.printHelp("osql", options);
             System.exit(1);
             return null;
         }
@@ -116,10 +119,13 @@ public class Main {
         assert argument != null;
         PrintStream out = argument.out;
         List<Table> tabs = getTables(new Scanner(argument.in, "UTF-8").useDelimiter("\\Z").next());
-        Database database = new SqlViewer(argument.mode).load(tabs);
+        Database db = Render.loadDatabase(tabs);
         if(argument.xml) {
-            (argument.dialect==null?out:System.out).println(database.getTables());
+            (argument.dialect == null ? out : System.out).println(db.getTables());
+            if(argument.dialect == null)
+                return;
         }
+        IDatabase<DbView> database = new SqlViewer(argument.mode).adoptDatabase(db);
         DbView view;
         try {
             view = database.use(argument.dialect);
@@ -134,12 +140,8 @@ public class Main {
             out.println(table.showTriggers());
             out.println(table.showInsertions());
         }
-        for(TableView table:tableViews) {
-            out.println(table.showConstraints());
-        }
-        for(TableView table:tableViews) if(table.getTable().from != null) {
-            out.println(table.showITable());
-        }
+        tableViews.stream().filter(table -> table.getTable().from != null).map(TableView::showConstraints).forEach(out::println);
+        tableViews.stream().filter(table -> table.getTable().from != null).map(TableView::showITable).forEach(out::println);
     }
 
 }

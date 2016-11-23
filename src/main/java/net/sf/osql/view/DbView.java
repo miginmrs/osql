@@ -2,7 +2,7 @@ package net.sf.osql.view;
 
 import net.sf.osql.model.Table;
 
-public class DbView {
+public class DbView implements IDbView<TableView> {
     private final Database database;
     private final Dialect dialect;
 
@@ -12,7 +12,8 @@ public class DbView {
         this.dialect = dialect;
     }
 
+    @Override
     public TableView render(Table table) {
-        return dialect.new TableViewImpl(table, database.getTableDocument(table));
+        return dialect.render(table, database.getTableDocument(table));
     }
 }

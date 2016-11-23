@@ -1,0 +1,912 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="xml.xsd"/>
+
+    <xs:import namespace="http://www.w3.org/2001/XMLSchema" schemaLocation="schema.xsd"/>
+
+    <xs:complexType name="generic-element-type" mixed="true">
+        <xs:attribute name="default-collation" type="uri-list"/>
+        <xs:attribute name="exclude-result-prefixes" type="prefix-list-or-all"/>
+        <xs:attribute name="extension-element-prefixes" type="prefix-list"/>
+        <xs:attribute name="use-when" type="expression"/>
+        <xs:attribute name="xpath-default-namespace" type="xs:anyURI"/>
+        <xs:anyAttribute namespace="##other" processContents="lax"/>
+    </xs:complexType>
+
+    <xs:complexType name="versioned-element-type" mixed="true">
+        <xs:complexContent>
+            <xs:extension base="generic-element-type">
+                <xs:attribute name="version" type="xs:decimal" use="optional"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="element-only-versioned-element-type" mixed="false">
+        <xs:complexContent>
+            <xs:restriction base="versioned-element-type">
+                <xs:anyAttribute namespace="##other" processContents="lax"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="sequence-constructor">
+        <xs:complexContent mixed="true">
+            <xs:extension base="versioned-element-type">
+                <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:group name="sequence-constructor-group">
+        <xs:choice>
+            <xs:element ref="variable"/>
+            <xs:element ref="instruction"/>
+            <xs:group ref="result-elements"/>
+        </xs:choice>
+    </xs:group>
+
+    <xs:element name="declaration" type="generic-element-type" abstract="true"/>
+
+    <xs:element name="instruction" type="versioned-element-type" abstract="true"/>
+
+    <xs:element name="analyze-string" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="matching-substring" minOccurs="0"/>
+                        <xs:element ref="non-matching-substring" minOccurs="0"/>
+                        <xs:element ref="fallback" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="select" type="expression" use="required"/>
+                    <xs:attribute name="regex" type="avt" use="required"/>
+                    <xs:attribute name="flags" type="avt" default=""/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="apply-imports" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="with-param" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="apply-templates" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="sort"/>
+                        <xs:element ref="with-param"/>
+                    </xs:choice>
+                    <xs:attribute name="select" type="expression" default="child::node()"/>
+                    <xs:attribute name="mode" type="mode"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="attribute" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="avt" use="required"/>
+                    <xs:attribute name="namespace" type="avt"/>
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="separator" type="avt"/>
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="attribute-set" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="attribute"/>
+                    </xs:sequence>
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="use-attribute-sets" type="QNames" default=""/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="call-template" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="with-param" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="name" type="QName" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="character-map" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="output-character" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="use-character-maps" type="QNames" default=""/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="choose" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="when" maxOccurs="unbounded"/>
+                        <xs:element ref="otherwise" minOccurs="0"/>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="comment" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="select" type="expression"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="copy" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="copy-namespaces" type="yes-or-no" default="yes"/>
+                    <xs:attribute name="inherit-namespaces" type="yes-or-no" default="yes"/>
+                    <xs:attribute name="use-attribute-sets" type="QNames" default=""/>
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="copy-of" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:attribute name="select" type="expression" use="required"/>
+                    <xs:attribute name="copy-namespaces" type="yes-or-no" default="yes"/>
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="document" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="decimal-format" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="name" type="QName"/>
+                    <xs:attribute name="decimal-separator" type="char" default="."/>
+                    <xs:attribute name="grouping-separator" type="char" default=","/>
+                    <xs:attribute name="infinity" type="xs:string" default="Infinity"/>
+                    <xs:attribute name="minus-sign" type="char" default="-"/>
+                    <xs:attribute name="NaN" type="xs:string" default="NaN"/>
+                    <xs:attribute name="percent" type="char" default="%"/>
+                    <xs:attribute name="per-mille" type="char" default="‰"/>
+                    <xs:attribute name="zero-digit" type="char" default="0"/>
+                    <xs:attribute name="digit" type="char" default="#"/>
+                    <xs:attribute name="pattern-separator" type="char" default=";"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="element" substitutionGroup="instruction">
+        <xs:complexType mixed="true">
+            <xs:complexContent>
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="avt" use="required"/>
+                    <xs:attribute name="namespace" type="avt"/>
+                    <xs:attribute name="inherit-namespaces" type="yes-or-no" default="yes"/>
+                    <xs:attribute name="use-attribute-sets" type="QNames" default=""/>
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="fallback" substitutionGroup="instruction" type="sequence-constructor"/>
+
+    <xs:element name="for-each" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="sort" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="select" type="expression" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="for-each-group" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="sort" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="select" type="expression" use="required"/>
+                    <xs:attribute name="group-by" type="expression"/>
+                    <xs:attribute name="group-adjacent" type="expression"/>
+                    <xs:attribute name="group-starting-with" type="pattern"/>
+                    <xs:attribute name="group-ending-with" type="pattern"/>
+                    <xs:attribute name="collation" type="xs:anyURI"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="function" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="override" type="yes-or-no" default="yes"/>
+                    <xs:attribute name="as" type="sequence-type" default="item()*"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="if" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="test" type="expression" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="import">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="import-schema" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="xs:schema" minOccurs="0" maxOccurs="1"/>
+                    </xs:sequence>
+                    <xs:attribute name="namespace" type="xs:anyURI"/>
+                    <xs:attribute name="schema-location" type="xs:anyURI"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="include" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="href" type="xs:anyURI" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="key" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="match" type="pattern" use="required"/>
+                    <xs:attribute name="use" type="expression"/>
+                    <xs:attribute name="collation" type="xs:anyURI"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="matching-substring" type="sequence-constructor"/>
+
+    <xs:element name="message" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="terminate" type="avt" default="no"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="namespace" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="avt" use="required"/>
+                    <xs:attribute name="select" type="expression"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="namespace-alias" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="stylesheet-prefix" type="prefix-or-default" use="required"/>
+                    <xs:attribute name="result-prefix" type="prefix-or-default" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="next-match" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:choice minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="with-param"/>
+                        <xs:element ref="fallback"/>
+                    </xs:choice>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="non-matching-substring" type="sequence-constructor"/>
+
+    <xs:element name="number" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:attribute name="value" type="expression"/>
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="level" type="level" default="single"/>
+                    <xs:attribute name="count" type="pattern"/>
+                    <xs:attribute name="from" type="pattern"/>
+                    <xs:attribute name="format" type="avt" default="1"/>
+                    <xs:attribute name="lang" type="avt"/>
+                    <xs:attribute name="letter-value" type="avt"/>
+                    <xs:attribute name="ordinal" type="avt"/>
+                    <xs:attribute name="grouping-separator" type="avt"/>
+                    <xs:attribute name="grouping-size" type="avt"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="otherwise" type="sequence-constructor"/>
+
+    <xs:element name="output" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="generic-element-type">
+                    <xs:attribute name="name" type="QName"/>
+                    <xs:attribute name="method" type="method"/>
+                    <xs:attribute name="byte-order-mark" type="yes-or-no"/>
+                    <xs:attribute name="cdata-section-elements" type="QNames"/>
+                    <xs:attribute name="doctype-public" type="xs:string"/>
+                    <xs:attribute name="doctype-system" type="xs:string"/>
+                    <xs:attribute name="encoding" type="xs:string"/>
+                    <xs:attribute name="escape-uri-attributes" type="yes-or-no"/>
+                    <xs:attribute name="include-content-type" type="yes-or-no"/>
+                    <xs:attribute name="indent" type="yes-or-no"/>
+                    <xs:attribute name="media-type" type="xs:string"/>
+                    <xs:attribute name="normalization-form" type="xs:NMTOKEN"/>
+                    <xs:attribute name="omit-xml-declaration" type="yes-or-no"/>
+                    <xs:attribute name="standalone" type="yes-or-no-or-omit"/>
+                    <xs:attribute name="undeclare-prefixes" type="yes-or-no"/>
+                    <xs:attribute name="use-character-maps" type="QNames"/>
+                    <xs:attribute name="version" type="xs:NMTOKEN"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="output-character">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="character" type="char" use="required"/>
+                    <xs:attribute name="string" type="xs:string" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="param">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="as" type="sequence-type"/>
+                    <xs:attribute name="required" type="yes-or-no"/>
+                    <xs:attribute name="tunnel" type="yes-or-no"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="perform-sort" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="sort" minOccurs="1" maxOccurs="unbounded"/>
+                        <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="select" type="expression"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="preserve-space" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="elements" type="nametests" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="processing-instruction" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="avt" use="required"/>
+                    <xs:attribute name="select" type="expression"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="result-document" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="format" type="avt"/>
+                    <xs:attribute name="href" type="avt"/>
+                    <xs:attribute name="type" type="QName"/>
+                    <xs:attribute name="validation" type="validation-type"/>
+                    <xs:attribute name="method" type="avt"/>
+                    <xs:attribute name="byte-order-mark" type="avt"/>
+                    <xs:attribute name="cdata-section-elements" type="avt"/>
+                    <xs:attribute name="doctype-public" type="avt"/>
+                    <xs:attribute name="doctype-system" type="avt"/>
+                    <xs:attribute name="encoding" type="avt"/>
+                    <xs:attribute name="escape-uri-attributes" type="avt"/>
+                    <xs:attribute name="include-content-type" type="avt"/>
+                    <xs:attribute name="indent" type="avt"/>
+                    <xs:attribute name="media-type" type="avt"/>
+                    <xs:attribute name="normalization-form" type="avt"/>
+                    <xs:attribute name="omit-xml-declaration" type="avt"/>
+                    <xs:attribute name="standalone" type="avt"/>
+                    <xs:attribute name="undeclare-prefixes" type="avt"/>
+                    <xs:attribute name="use-character-maps" type="QNames"/>
+                    <xs:attribute name="output-version" type="avt"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="sequence" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                        <xs:element ref="fallback"/>
+                    </xs:sequence>
+                    <xs:attribute name="select" type="expression"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="sort">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="lang" type="avt"/>
+                    <xs:attribute name="data-type" type="avt" default="text"/>
+                    <xs:attribute name="order" type="avt" default="ascending"/>
+                    <xs:attribute name="case-order" type="avt"/>
+                    <xs:attribute name="collation" type="avt"/>
+                    <xs:attribute name="stable" type="yes-or-no"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="strip-space" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="element-only-versioned-element-type">
+                    <xs:attribute name="elements" type="nametests" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="stylesheet" substitutionGroup="transform"/>
+
+    <xs:element name="template" substitutionGroup="declaration">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="versioned-element-type">
+                    <xs:sequence>
+                        <xs:element ref="param" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:group ref="sequence-constructor-group" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                    <xs:attribute name="match" type="pattern"/>
+                    <xs:attribute name="priority" type="xs:decimal"/>
+                    <xs:attribute name="mode" type="modes"/>
+                    <xs:attribute name="name" type="QName"/>
+                    <xs:attribute name="as" type="sequence-type" default="item()*"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="text-element-base-type">
+        <xs:simpleContent>
+            <xs:restriction base="versioned-element-type">
+                <xs:simpleType>
+                    <xs:restriction base="xs:string"/>
+                </xs:simpleType>
+                <xs:anyAttribute namespace="##other" processContents="lax"/>
+            </xs:restriction>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:element name="text" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="text-element-base-type">
+                    <xs:attribute name="disable-output-escaping" type="yes-or-no" default="no"/>
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="transform-element-base-type">
+        <xs:complexContent>
+            <xs:restriction base="element-only-versioned-element-type">
+                <xs:attribute name="version" type="xs:decimal" use="required"/>
+                <xs:anyAttribute namespace="##other" processContents="lax"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="transform">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="transform-element-base-type">
+                    <xs:sequence>
+                        <xs:element ref="import" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:choice minOccurs="0" maxOccurs="unbounded">
+                            <xs:element ref="declaration"/>
+                            <xs:element ref="variable"/>
+                            <xs:element ref="param"/>
+                            <xs:any namespace="##other" processContents="lax"/> <!-- weaker than XSLT 1.0 -->
+                        </xs:choice>
+                    </xs:sequence>
+                    <xs:attribute name="id" type="xs:ID"/>
+                    <xs:attribute name="default-validation" type="validation-strip-or-preserve" default="strip"/>
+                    <xs:attribute name="input-type-annotations" type="input-type-annotations-type" default="unspecified"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="value-of" substitutionGroup="instruction">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="separator" type="avt"/>
+                    <xs:attribute name="disable-output-escaping" type="yes-or-no" default="no"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="variable">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="select" type="expression" use="optional"/>
+                    <xs:attribute name="as" type="sequence-type" use="optional"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="when">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="test" type="expression" use="required"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="with-param">
+        <xs:complexType>
+            <xs:complexContent mixed="true">
+                <xs:extension base="sequence-constructor">
+                    <xs:attribute name="name" type="QName" use="required"/>
+                    <xs:attribute name="select" type="expression"/>
+                    <xs:attribute name="as" type="sequence-type"/>
+                    <xs:attribute name="tunnel" type="yes-or-no"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="literal-result-element" abstract="true" type="xs:anyType"/>
+
+    <xs:attributeGroup name="literal-result-element-attributes">
+        <xs:attribute name="default-collation" form="qualified" type="uri-list"/>
+        <xs:attribute name="extension-element-prefixes" form="qualified" type="prefixes"/>
+        <xs:attribute name="exclude-result-prefixes" form="qualified" type="prefixes"/>
+        <xs:attribute name="xpath-default-namespace" form="qualified" type="xs:anyURI"/>
+        <xs:attribute name="inherit-namespaces" form="qualified" type="yes-or-no" default="yes"/>
+        <xs:attribute name="use-attribute-sets" form="qualified" type="QNames" default=""/>
+        <xs:attribute name="use-when" form="qualified" type="expression"/>
+        <xs:attribute name="version" form="qualified" type="xs:decimal"/>
+        <xs:attribute name="type" form="qualified" type="QName"/>
+        <xs:attribute name="validation" form="qualified" type="validation-type"/>
+    </xs:attributeGroup>
+
+    <xs:group name="result-elements">
+        <xs:choice>
+            <xs:element ref="literal-result-element"/>
+            <xs:any namespace="##other" processContents="lax"/>
+            <xs:any namespace="##local" processContents="lax"/>
+        </xs:choice>
+    </xs:group>
+
+
+    <xs:simpleType name="avt">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="char">
+        <xs:restriction base="xs:string">
+            <xs:length value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="expression">
+        <xs:restriction base="xs:token">
+            <xs:pattern value=".+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="input-type-annotations-type">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="preserve"/>
+            <xs:enumeration value="strip"/>
+            <xs:enumeration value="unspecified"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="level">
+        <xs:restriction base="xs:NCName">
+            <xs:enumeration value="single"/>
+            <xs:enumeration value="multiple"/>
+            <xs:enumeration value="any"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="mode">
+        <xs:union memberTypes="QName">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="#default"/>
+                    <xs:enumeration value="#current"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
+    <xs:simpleType name="modes">
+        <xs:union>
+            <xs:simpleType>
+                <xs:list>
+                    <xs:simpleType>
+                        <xs:union memberTypes="QName">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:token">
+                                    <xs:enumeration value="#default"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:union>
+                    </xs:simpleType>
+                </xs:list>
+            </xs:simpleType>
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="#all"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
+    <xs:simpleType name="nametests">
+        <xs:list>
+            <xs:simpleType>
+                <xs:union memberTypes="QName">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:token">
+                            <xs:enumeration value="*"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                    <xs:simpleType>
+                        <xs:restriction base="xs:token">
+                            <xs:pattern value="\i\c*:\*"/>
+                            <xs:pattern value="\*:\i\c*"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:union>
+            </xs:simpleType>
+        </xs:list>
+    </xs:simpleType>
+
+    <xs:simpleType name="prefixes">
+        <xs:list itemType="xs:NCName"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="prefix-list-or-all">
+        <xs:union memberTypes="prefix-list">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="#all"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
+    <xs:simpleType name="prefix-list">
+        <xs:list itemType="prefix-or-default"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="method">
+        <xs:union>
+            <xs:simpleType>
+                <xs:restriction base="xs:NCName">
+                    <xs:enumeration value="xml"/>
+                    <xs:enumeration value="xhtml"/>
+                    <xs:enumeration value="html"/>
+                    <xs:enumeration value="text"/>
+                </xs:restriction>
+            </xs:simpleType>
+            <xs:simpleType>
+                <xs:restriction base="QName">
+                    <xs:pattern value="\c*:\c*"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
+    <xs:simpleType name="pattern">
+        <xs:restriction base="expression"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="prefix-or-default">
+        <xs:union memberTypes="xs:NCName">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="#default"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:union>
+    </xs:simpleType>
+
+    <xs:simpleType name="QNames">
+        <xs:list itemType="QName"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="QName">
+        <xs:restriction base="xs:QName">
+            <xs:pattern value="([^:]+:)?[^:]+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="sequence-type">
+        <xs:restriction base="xs:token">
+            <xs:pattern value=".+"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="uri-list">
+        <xs:list itemType="xs:anyURI"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="validation-strip-or-preserve">
+        <xs:restriction base="validation-type">
+            <xs:enumeration value="preserve"/>
+            <xs:enumeration value="strip"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="validation-type">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="strict"/>
+            <xs:enumeration value="lax"/>
+            <xs:enumeration value="preserve"/>
+            <xs:enumeration value="strip"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="yes-or-no">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="yes"/>
+            <xs:enumeration value="no"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="yes-or-no-or-omit">
+        <xs:restriction base="xs:token">
+            <xs:enumeration value="yes"/>
+            <xs:enumeration value="no"/>
+            <xs:enumeration value="omit"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

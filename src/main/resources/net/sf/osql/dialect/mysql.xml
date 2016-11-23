@@ -1,156 +1,161 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<table xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-<define>
-	<var name="escape">
-		<xsl:value-of select="replace(replace(., '\\', '\\\\'), '''', '\\''')"/>
-	</var>
-</define>
-<definition>
-CREATE TABLE `<use name="name"/>` (<link name="root">
-	`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY</link><link name="child">
+<d:document xmlns:xslm = "alias://xsl/pure"
+         xmlns:xsi  = "http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:d    = "http://xsltiny.sf.net/document"
+         xsi:schemaLocation="http://xsltiny.sf.net/document ../../xsltiny/schema/document.xsd">
+<d:properties/>
+<d:define>
+	<d:mapper name="escape">
+		<xslm:value-of select="replace(replace(., '\\', '\\\\'), '''', '\\''')"/>
+	</d:mapper>
+</d:define>
+<d:section name="definition">
+<d:get name="sql"/>
+CREATE TABLE `<d:use name="name"/>` (<d:link name="root">
+	`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY</d:link><d:link name="child">
 	`id` int NOT NULL PRIMARY KEY,
-	`type` enum('<join delimiter="','"><use name="siblings"/></join>') NOT NULL DEFAULT '<use name="name"/>',
+	`type` enum('<d:join delimiter="','"><d:list name="siblings"/></d:join>') NOT NULL DEFAULT '<d:use name="name"/>',
 	KEY `type` (`type`,`id`),
-	CONSTRAINT `<use name="name"/>_ibfk_1` FOREIGN KEY (`type`,`id`) REFERENCES `<use name="from"/>`(`subtype`,`id`)</link><link name="parent">,
-	`subtype` enum('<join delimiter="','"><use name="subtypes"/></join>') <link name="notnull">NOT </link>NULL,
-	KEY `subtype` (`subtype`,`id`)</link><link name="columns"><link name="present">,
-	`<use name="name"/>` <use name="type"/><link name="notnull"> NOT</link> NULL<link name="unique"> UNIQUE</link><link name="default"> DEFAULT <use name="default"/></link><link name="comment"> COMMENT '<call name="escape"><use name="comment"/></call>'</link></link></link><link name="index">,
-	KEY `<use name="name"/>` (`<join delimiter="`,`"><use name="columns"/></join>`)</link><link name="unique">,
-	UNIQUE `<use name="name"/>` (`<join delimiter="`,`"><use name="columns"/></join>`)</link>
+	CONSTRAINT `<d:use name="name"/>_ibfk_1` FOREIGN KEY (`type`,`id`) REFERENCES `<d:use name="from"/>`(`subtype`,`id`)</d:link><d:link name="parent">,
+	`subtype` enum('<d:join delimiter="','"><d:list name="subtypes"/></d:join>') <d:link name="notnull">NOT </d:link>NULL,
+	KEY `subtype` (`subtype`,`id`)</d:link><d:for name="column"><d:link name="present">,
+	`<d:use name="name"/>` <d:use name="type"/><d:link name="notnull"> NOT</d:link> NULL<d:link name="unique"> UNIQUE</d:link><d:link name="default"> DEFAULT <d:use name="default"/></d:link><d:link name="comment"> COMMENT '<d:map name="escape"><d:use name="comment"/></d:map>'</d:link></d:link></d:for><d:for name="index">,
+	KEY `<d:use name="name"/>` (`<d:join delimiter="`,`"><d:list name="columns"/></d:join>`)</d:for><d:for name="unique">,
+	UNIQUE `<d:use name="name"/>` (`<d:join delimiter="`,`"><d:list name="columns"/></d:join>`)</d:for>
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-</definition>
-<constraints>
-ALTER TABLE `<use name="name"/>` ADD CONSTRAINT `<use name="name"/>_ibfk_<use name="number"/>` FOREIGN KEY (`<use name="reference"/>`) REFERENCES `<use name="target"/>`(`id`)<link name="setnull"> ON DELETE SET NULL</link>;
-</constraints>
-<triggers>
+</d:section>
+<d:section name="constraints"><d:for name="constraint">
+ALTER TABLE `<d:use name="name"/>` ADD CONSTRAINT `<d:use name="name"/>_ibfk_<d:use name="number"/>` FOREIGN KEY (`<d:use name="reference"/>`) REFERENCES `<d:use name="target"/>`(`id`)<d:link name="setnull"> ON DELETE SET NULL</d:link>;
+</d:for></d:section>
+<d:section name="triggers">
 DELIMITER $$
-<trigger event="before" action="insert">
-DROP TRIGGER IF EXISTS `before<use name="name"/>insert`$$
-CREATE TRIGGER `before<use name="name"/>insert` BEFORE INSERT ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="beforeinsert">
+<d:link name="before:insert">
+DROP TRIGGER IF EXISTS `before<d:use name="name"/>insert`$$
+CREATE TRIGGER `before<d:use name="name"/>insert` BEFORE INSERT ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="trigger">
 	BEGIN
-		<use name="beforeinsert"/>
-	END;</link><link name="child">
+		<d:use name="trigger"/>
+	END;</d:link><d:link name="child">
 	SET NEW.`id` = @id;
-	SET NEW.`type` = '<use name="name"/>';</link><link name="parent">
-	SET NEW.`subtype` = @_<use name="name"/>;</link><link name="columns"><link name="present">
-	SET NEW.`<use name="name"/>` = IF(@<use name="name"/> IS NULL, NEW.`<use name="name"/>`, @<use name="name"/>);</link></link>
+	SET NEW.`type` = '<d:use name="name"/>';</d:link><d:link name="parent">
+	SET NEW.`subtype` = @_<d:use name="name"/>;</d:link><d:for name="column"><d:link name="present">
+	SET NEW.`<d:use name="name"/>` = IF(@<d:use name="name"/> IS NULL, NEW.`<d:use name="name"/>`, @<d:use name="name"/>);</d:link></d:for>
 END $$
-</trigger>
-<trigger event="after" action="insert">
-DROP TRIGGER IF EXISTS `after<use name="name"/>insert`$$
-CREATE TRIGGER `after<use name="name"/>insert` AFTER INSERT ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="parent">
+</d:link>
+<d:link name="after:insert">
+DROP TRIGGER IF EXISTS `after<d:use name="name"/>insert`$$
+CREATE TRIGGER `after<d:use name="name"/>insert` AFTER INSERT ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="parent">
 	SET @id = NEW.`id`;
-	CASE NEW.`subtype`<link name="subtype">
-		WHEN '<use name="name"/>' THEN INSERT INTO `<use name="name"/>` VALUES ();</link>
-		ELSE BEGIN<link name="abstract">
+	CASE NEW.`subtype`<d:for name="subtype">
+		WHEN '<d:use name="name"/>' THEN INSERT INTO `<d:use name="name"/>` VALUES ();</d:for>
+		ELSE BEGIN<d:link name="abstract">
 			DECLARE msg text DEFAULT concat('Unknown type "',NEW.`subtype`,'" for after insert trigger');
-			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;</link>
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;</d:link>
 		END;
-	END CASE;</link><link name="dependent">
-	CASE @$ref<link name="link">
-		WHEN '<use name="sname"/>' THEN
-			UPDATE `<use name="document"/>` SET `<use name="name"/>`=NEW.`id` WHERE `id`=@$rid;
+	END CASE;</d:link><d:link name="dependent">
+	CASE @$ref<d:for name="link">
+		WHEN '<d:use name="sname"/>' THEN
+			UPDATE `<d:use name="table"/>` SET `<d:use name="name"/>`=NEW.`id` WHERE `id`=@$rid;
 			IF ROW_COUNT()=0 THEN
 			BEGIN
 				DECLARE msg text DEFAULT concat('Not found object id "',if(@$rid is null, 'null', @$rid),'" for reference "',@ref,'" in after insert trigger');
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;
 			END;
-			END IF;</link>
+			END IF;</d:for>
 		ELSE BEGIN
-			DECLARE msg text DEFAULT if(@$ref is null, '<use name="name"/> must be referenced', concat('Unknown reference "',@$ref,'" for after insert trigger'));
+			DECLARE msg text DEFAULT if(@$ref is null, '<d:use name="name"/> must be referenced', concat('Unknown reference "',@$ref,'" for after insert trigger'));
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;
 		END;
-	END CASE;</link><link name="afterinsert">
+	END CASE;</d:link><d:link name="trigger">
 	BEGIN
-		<use name="afterinsert"/>
-	END;</link>
+		<d:use name="trigger"/>
+	END;</d:link>
 END $$
-</trigger>
-<trigger event="before" action="update">
-DROP TRIGGER IF EXISTS `before<use name="name"/>update`$$
-CREATE TRIGGER `before<use name="name"/>update` BEFORE UPDATE ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="beforeupdate">
+</d:link>
+<d:link name="before:update">
+DROP TRIGGER IF EXISTS `before<d:use name="name"/>update`$$
+CREATE TRIGGER `before<d:use name="name"/>update` BEFORE UPDATE ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="trigger">
 	BEGIN
-		<use name="beforeupdate"/>
-	END;</link><link name="child">
-	SET NEW.`type` = '<use name="name"/>';<link name="verify-inherited">
+		<d:use name="trigger"/>
+	END;</d:link><d:link name="child">
+	SET NEW.`type` = '<d:use name="name"/>';<d:link name="verify-inherited">
 	IF NOT EXISTS (
-		SELECT * 
-		FROM <use name="from"/> 
-		WHERE (`id` = OLD.`id`)<link name="inherited">
-		AND (@<use name="name"/> IS NULL AND NEW.`<use name="name"/>` IS NULL OR @<use name="name"/> = NEW.`<use name="name"/>`)</link>
+		SELECT *
+		FROM <d:use name="from"/>
+		WHERE (`id` = OLD.`id`) <d:for name="column"><d:link name="inherited">
+		AND (@<d:use name="name"/> IS NULL AND NEW.`<d:use name="name"/>` IS NULL OR @<d:use name="name"/> = NEW.`<d:use name="name"/>`)</d:link></d:for>
 	) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= 'Invalid inherited values for before update trigger';
-	END IF;</link></link><link name="compositions">
-	<var name="composition">(OLD.`<use name="name"/>` IS NOT NULL AND (NEW.`<use name="name"/>` IS NULL OR NEW.`<use name="name"/>`!=OLD.`<use name="name"/>`))
-	</var>
-	IF <join delimiter="OR "><use name="composition"/></join>THEN
+	END IF;</d:link></d:link><d:link name="compositions">
+	<d:var name="composition">(OLD.`<d:use name="name"/>` IS NOT NULL AND (NEW.`<d:use name="name"/>` IS NULL OR NEW.`<d:use name="name"/>`!=OLD.`<d:use name="name"/>`))
+	</d:var>
+	IF <d:join delimiter="OR "><d:list name="compositions"/></d:join>THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= 'Invalid reference values for before update trigger';
-	END IF;</link>
+	END IF;</d:link>
 END $$
-</trigger>
-<trigger event="after" action="update">
-DROP TRIGGER IF EXISTS `after<use name="name"/>update`$$
-CREATE TRIGGER `after<use name="name"/>update` AFTER UPDATE ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="inherit">
-	CASE OLD.`subtype`<link name="subtype"><var name="inherit">
-			`<use name="name"/>` = NEW.`<use name="name"/>`</var>
-		WHEN '<use name="name"/>' THEN UPDATE `<use name="name"/>` SET <join delimiter=", "><use name="inherit"/></join>
-			WHERE `id`=OLD.`id`;</link><link name="concrete">
+</d:link>
+<d:link name="after:update">
+DROP TRIGGER IF EXISTS `after<d:use name="name"/>update`$$
+CREATE TRIGGER `after<d:use name="name"/>update` AFTER UPDATE ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="inherit">
+	CASE OLD.`subtype`<d:for name="subtype"><d:var name="inherit">
+			`<d:use name="name"/>` = NEW.`<d:use name="name"/>`</d:var>
+		WHEN '<d:use name="name"/>' THEN UPDATE `<d:use name="name"/>` SET <d:join delimiter=", "><d:list name="inherits"/></d:join>
+			WHERE `id`=OLD.`id`;</d:for><d:link name="concrete">
 		ELSE BEGIN
-		END;</link>
-	END CASE;</link><link name="afterupdate">
+		END;</d:link>
+	END CASE;</d:link><d:link name="trigger">
 	BEGIN
-		<use name="afterupdate"/>
-	END;</link>
+		<d:use name="trigger"/>
+	END;</d:link>
 END $$
-</trigger>
-<trigger event="before" action="delete">
-DROP TRIGGER IF EXISTS `before<use name="name"/>delete`$$
-CREATE TRIGGER `before<use name="name"/>delete` BEFORE DELETE ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="beforedelete">
+</d:link>
+<d:link name="before:delete">
+DROP TRIGGER IF EXISTS `before<d:use name="name"/>delete`$$
+CREATE TRIGGER `before<d:use name="name"/>delete` BEFORE DELETE ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="trigger">
 	BEGIN
-		<use name="beforedelete"/>
-	END;</link>
+		<d:use name="trigger"/>
+	END;</d:link>
 END $$
-</trigger>
-<trigger event="after" action="delete">
-DROP TRIGGER IF EXISTS `after<use name="name"/>delete`$$
-CREATE TRIGGER `after<use name="name"/>delete` AFTER DELETE ON `<use name="name"/>` FOR EACH ROW
-BEGIN<link name="child">
-	DELETE FROM `<use name="from"/>` WHERE `id`=old.`id` AND `subtype`=old.`type`;</link><link name="compositions">
+</d:link>
+<d:link name="after:delete">
+DROP TRIGGER IF EXISTS `after<d:use name="name"/>delete`$$
+CREATE TRIGGER `after<d:use name="name"/>delete` AFTER DELETE ON `<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:link name="child">
+	DELETE FROM `<d:use name="from"/>` WHERE `id`=old.`id` AND `subtype`=old.`type`;</d:link><d:link name="compositions">
 	BEGIN
-		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END;<var name="composition">
-		DELETE FROM `<use name="document"/>` WHERE `id`=old.`<use name="name"/>`;</var><use name="composition"/>
-	END;</link><link name="afterdelete">
+		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END;<d:for name="column"><d:link name="composition">
+		DELETE FROM `<d:use name="table"/>` WHERE `id`=old.`<d:use name="name"/>`;</d:link></d:for>
+	END;</d:link><d:link name="trigger">
 	BEGIN
-		<use name="afterdelete"/>
-	END;</link>
+		<d:use name="trigger"/>
+	END;</d:link>
 END $$
-</trigger>
+</d:link>
 DELIMITER ;
-</triggers>
-<insertion>
-<var name="null">NULL</var>
-<var name="string">'<use name="string"/>'</var>
-<link name="set">
-SET @<use name="name"/> = <use name="value"/>;</link>
-INSERT INTO `<use name="into"/>` VALUES();
-</insertion>
-<itable>
-DROP TABLE IF EXISTS `i_<use name="name"/>`;
-CREATE TABLE `i_<use name="name"/>` (<join delimiter=","><link name="columns"><item>
-	`<use name="name"/>` <use name="type"/></item></link></join>
+</d:section>
+<d:section name="insertion">
+<d:for name="insertion">
+<d:var name="null">NULL</d:var>
+<d:for name="entry"><d:var name="string">'<d:use name="string"/>'</d:var>
+SET @<d:use name="name"/> = <d:use name="value"/>;</d:for>
+INSERT INTO `<d:use name="into"/>` VALUES();
+</d:for></d:section>
+<d:section name="itable">
+DROP TABLE IF EXISTS `i_<d:use name="name"/>`;
+CREATE TABLE `i_<d:use name="name"/>` (<d:join delimiter=","><d:for name="column"><d:item>
+	`<d:use name="name"/>` <d:use name="type"/></d:item></d:for></d:join>
 ) ENGINE=BlackHole DEFAULT CHARSET=utf8;
 DELIMITER $$
-CREATE TRIGGER `beforei_<use name="name"/>insert` BEFORE INSERT ON `i_<use name="name"/>` FOR EACH ROW 
-BEGIN<link name="columns">
-	SET @<use name="name"/> = NEW.`<use name="name"/>`;</link><link name="path">
-	SET @<use name="name"/> = '<use name="string"/>';</link>
-	INSERT INTO `<use name="into"/>` values();
+CREATE TRIGGER `beforei_<d:use name="name"/>insert` BEFORE INSERT ON `i_<d:use name="name"/>` FOR EACH ROW
+BEGIN<d:for name="column">
+	SET @<d:use name="name"/> = NEW.`<d:use name="name"/>`;</d:for><d:for name="pentry">
+	SET @<d:use name="name"/> = '<d:use name="string"/>';</d:for>
+	INSERT INTO `<d:use name="into"/>` values();
 END $$
 DELIMITER ;
-</itable>
-</table>
+</d:section>
+</d:document>
