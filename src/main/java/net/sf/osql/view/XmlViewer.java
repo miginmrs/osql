@@ -24,8 +24,8 @@ class XmlViewer implements Function<Table, Document> {
         Element root = document.createElement("table");
         root.setAttribute("name", table.name);
         if(table.from != null) root.setAttribute("from", table.from.name);
-        root.setAttribute("abstract", table.isAbstract ? "true" : "false");
-        root.setAttribute("dependent", table.dependent ? "true" : "false");
+        if(table.isAbstract) root.setAttribute("abstract", "true");
+        if(table.dependent) root.setAttribute("dependent", "true");
         Element sql = document.createElement("sql");
         sql.appendChild(document.createCDATASection(table.sqldata));
         root.appendChild(sql);
@@ -50,16 +50,17 @@ class XmlViewer implements Function<Table, Document> {
             Element columnElement = document.createElement("column");
             columnElement.setAttribute("name", column.getName());
             if(column.getTable() != null) columnElement.setAttribute("table", column.getTable().name);
-            columnElement.setAttribute("present", column.isPresent() ? "true" : "false");
+            if(column.isPresent()) columnElement.setAttribute("present", "true");
             columnElement.setAttribute("type", column.getType());
+            columnElement.setAttribute("definer", column.definer.name);
             if(column.isPresent()) {
-                columnElement.setAttribute("null", column.nullable ? "true" : "false");
-                columnElement.setAttribute("unique", column.unique ? "true" : "false");
+                if(column.nullable) columnElement.setAttribute("null", "true");
+                if(column.unique) columnElement.setAttribute("unique", "true");
                 if(column.defaultValue != null) columnElement.setAttribute("default", column.defaultValue);
                 if(column.comment != null) columnElement.setAttribute("comment", column.comment);
-                columnElement.setAttribute("new", column.isNew() ? "true" : "false");
-                columnElement.setAttribute("composition", column.isComposition() ? "true" : "false");
-                columnElement.setAttribute("inherit", !table.subtypes.isEmpty() && column.isInherit() ? "true" : "false");
+                if(column.isNew()) columnElement.setAttribute("new", "true");
+                if(column.isComposition()) columnElement.setAttribute("composition", "true");
+                if(!table.subtypes.isEmpty() && column.isInherit()) columnElement.setAttribute("inherit", "true");
             }
             columns.appendChild(columnElement);
         });
@@ -101,12 +102,16 @@ class XmlViewer implements Function<Table, Document> {
             element.setAttribute("value", value);
             return element;
         };
+        BiFunction<String, String, Element> stringEntry = (name, value) -> {
+            Element element = nameEntry.apply(name);
+            element.setAttribute("string", value);
+            return element;
+        };
 
         Element path = document.createElement("path");
         Table parent = table;
         while (parent != null) {
-            Element element = nameEntry.apply("_" + (parent.from == null ? "" : parent.from.name));
-            element.setAttribute("string", parent.from == null ? table.name : parent.name);
+            Element element = stringEntry.apply("_" + (parent.from == null ? "" : parent.from.name), parent.from == null ? table.name : parent.name);
             path.appendChild(element);
             parent = parent.from;
         }
@@ -131,7 +136,7 @@ class XmlViewer implements Function<Table, Document> {
                     for (String colName : insertBlock.columns) {
                         Object value = it.next();
                         if (value instanceof ParamsValue) {
-                            insertion.appendChild(entry.apply(colName, tab.name));
+                            insertion.appendChild(stringEntry.apply(colName, tab.name));
                             for (Map.Entry<String, Object> param : params.params.entrySet()) {
                                 Column col = insertBlock.paramsTable.columns.get(param.getKey());
                                 insertion.appendChild(entry.apply(col.getName(), param.getValue().toString()));
@@ -175,7 +180,7 @@ class XmlViewer implements Function<Table, Document> {
             subtypeElement.setAttribute("number", Integer.toString(constraint.ibfk));
             subtypeElement.setAttribute("reference", constraint.column.getName());
             subtypeElement.setAttribute("target", constraint.references.name);
-            subtypeElement.setAttribute("composition", constraint.column.isComposition() ? "true" : "false");
+            if(constraint.column.isComposition()) subtypeElement.setAttribute("composition", "true");
             constraints.appendChild(subtypeElement);
         });
         root.appendChild(constraints);

@@ -17,7 +17,7 @@ CREATE TABLE `<d:use name="name"/>` (<d:link name="root">
 	`type` enum('<d:join delimiter="','"><d:list name="siblings"/></d:join>') NOT NULL DEFAULT '<d:use name="name"/>',
 	KEY `type` (`type`,`id`),
 	CONSTRAINT `<d:use name="name"/>_ibfk_1` FOREIGN KEY (`type`,`id`) REFERENCES `<d:use name="from"/>`(`subtype`,`id`)</d:link><d:link name="parent">,
-	`subtype` enum('<d:join delimiter="','"><d:list name="subtypes"/></d:join>') <d:link name="notnull">NOT </d:link>NULL,
+	`subtype` enum('<d:join delimiter="','"><d:list name="subtypes"/></d:join>')<d:link name="notnull"> NOT</d:link> NULL,
 	KEY `subtype` (`subtype`,`id`)</d:link><d:for name="column"><d:link name="present">,
 	`<d:use name="name"/>` <d:use name="type"/><d:link name="notnull"> NOT</d:link> NULL<d:link name="unique"> UNIQUE</d:link><d:link name="default"> DEFAULT <d:use name="default"/></d:link><d:link name="comment"> COMMENT '<d:map name="escape"><d:use name="comment"/></d:map>'</d:link></d:link></d:for><d:for name="index">,
 	KEY `<d:use name="name"/>` (`<d:join delimiter="`,`"><d:list name="columns"/></d:join>`)</d:for><d:for name="unique">,
@@ -33,7 +33,7 @@ DELIMITER $$
 DROP TRIGGER IF EXISTS `before<d:use name="name"/>insert`$$
 CREATE TRIGGER `before<d:use name="name"/>insert` BEFORE INSERT ON `<d:use name="name"/>` FOR EACH ROW
 BEGIN<d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link><d:link name="child">
 	SET NEW.`id` = @id;
@@ -55,7 +55,7 @@ BEGIN<d:link name="parent">
 		END;
 	END CASE;</d:link><d:link name="dependent">
 	CASE @$ref<d:for name="link">
-		WHEN '<d:use name="sname"/>' THEN
+		WHEN '<d:use name="table"/>.<d:use name="sname"/>' THEN
 			UPDATE `<d:use name="table"/>` SET `<d:use name="name"/>`=NEW.`id` WHERE `id`=@$rid;
 			IF ROW_COUNT()=0 THEN
 			BEGIN
@@ -68,7 +68,7 @@ BEGIN<d:link name="parent">
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= msg;
 		END;
 	END CASE;</d:link><d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link>
 END $$
@@ -77,21 +77,21 @@ END $$
 DROP TRIGGER IF EXISTS `before<d:use name="name"/>update`$$
 CREATE TRIGGER `before<d:use name="name"/>update` BEFORE UPDATE ON `<d:use name="name"/>` FOR EACH ROW
 BEGIN<d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link><d:link name="child">
 	SET NEW.`type` = '<d:use name="name"/>';<d:link name="verify-inherited">
 	IF NOT EXISTS (
 		SELECT *
-		FROM <d:use name="from"/>
-		WHERE (`id` = OLD.`id`) <d:for name="column"><d:link name="inherited">
+		FROM `<d:use name="from"/>`
+		WHERE (`id` = OLD.`id`)<d:for name="column"><d:link name="inherited">
 		AND (@<d:use name="name"/> IS NULL AND NEW.`<d:use name="name"/>` IS NULL OR @<d:use name="name"/> = NEW.`<d:use name="name"/>`)</d:link></d:for>
 	) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= 'Invalid inherited values for before update trigger';
 	END IF;</d:link></d:link><d:link name="compositions">
-	<d:var name="composition">(OLD.`<d:use name="name"/>` IS NOT NULL AND (NEW.`<d:use name="name"/>` IS NULL OR NEW.`<d:use name="name"/>`!=OLD.`<d:use name="name"/>`))
-	</d:var>
-	IF <d:join delimiter="OR "><d:list name="compositions"/></d:join>THEN
+	<d:ivar name="conditions"><d:for name="column"><d:if name="composition"><d:item> (OLD.`<d:use name="name"/>` IS NOT NULL AND (NEW.`<d:use name="name"/>` IS NULL OR NEW.`<d:use name="name"/>`!=OLD.`<d:use name="name"/>`))
+	<d:br/></d:item></d:if></d:for></d:ivar>
+	IF<d:join delimiter="OR"><d:ilay name="conditions"/></d:join> THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT= 'Invalid reference values for before update trigger';
 	END IF;</d:link>
 END $$
@@ -100,14 +100,16 @@ END $$
 DROP TRIGGER IF EXISTS `after<d:use name="name"/>update`$$
 CREATE TRIGGER `after<d:use name="name"/>update` AFTER UPDATE ON `<d:use name="name"/>` FOR EACH ROW
 BEGIN<d:link name="inherit">
-	CASE OLD.`subtype`<d:for name="subtype"><d:var name="inherit">
-			`<d:use name="name"/>` = NEW.`<d:use name="name"/>`</d:var>
-		WHEN '<d:use name="name"/>' THEN UPDATE `<d:use name="name"/>` SET <d:join delimiter=", "><d:list name="inherits"/></d:join>
+	CASE OLD.`subtype`
+	<d:for name="subtype">
+		<d:var name="subtype"><d:use name="name"/></d:var>
+		<d:ivar name="inherits"><d:for root="yes" name="column"><d:if name="inherit"><d:item>`<d:lay name="subtype"/>`.`<d:use name="name"/>` = NEW.`<d:use name="name"/>`</d:item></d:if></d:for></d:ivar>
+		WHEN '<d:use name="name"/>' THEN UPDATE `<d:use name="name"/>` SET <d:join delimiter=", "><d:ilay name="inherits"/></d:join>
 			WHERE `id`=OLD.`id`;</d:for><d:link name="concrete">
 		ELSE BEGIN
 		END;</d:link>
 	END CASE;</d:link><d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link>
 END $$
@@ -116,7 +118,7 @@ END $$
 DROP TRIGGER IF EXISTS `before<d:use name="name"/>delete`$$
 CREATE TRIGGER `before<d:use name="name"/>delete` BEFORE DELETE ON `<d:use name="name"/>` FOR EACH ROW
 BEGIN<d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link>
 END $$
@@ -130,7 +132,7 @@ BEGIN<d:link name="child">
 		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END;<d:for name="column"><d:link name="composition">
 		DELETE FROM `<d:use name="table"/>` WHERE `id`=old.`<d:use name="name"/>`;</d:link></d:for>
 	END;</d:link><d:link name="trigger">
-	BEGIN
+	BEGIN<d:br/>
 		<d:use name="trigger"/>
 	END;</d:link>
 END $$

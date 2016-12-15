@@ -26,7 +26,7 @@ class InsertBlockParser implements Function<Parser, InsertBlock> {
     private final DollarValue.Context context;
     private final int[] auto_inc;
 
-    public InsertBlockParser(Table table, DollarValue.Context context, int[] auto_inc) {
+    InsertBlockParser(Table table, DollarValue.Context context, int[] auto_inc) {
         this.table = table;
         this.context = context;
         this.auto_inc = auto_inc;
@@ -80,7 +80,7 @@ class InsertBlockParser implements Function<Parser, InsertBlock> {
                         instructionValue = DollarValue.get(context, value.substring(1));
                     } else if (value.startsWith("@")) {
                         if (into != null) {
-                            throw new ParseException("Unable to store mutiple insertions into one value");
+                            throw new ParseException("Unable to store multiple insertions into one value");
                         }
                         if (paramsSet) {
                             throw new ParseException("Unable to set more than one params list" + " per insertion");
@@ -93,12 +93,7 @@ class InsertBlockParser implements Function<Parser, InsertBlock> {
                         instructionValue = new ParamsValue(interfaceName);
                         paramsTable = interf;
                         --auto_inc[0];
-                        List<Table> paramsList = context.paramsList.get(table.root.name);
-                        if(paramsList == null) {
-                            paramsList = new LinkedList<>();
-                            context.paramsList.put(table.root.name, paramsList);
-                        }
-                        paramsList.add(interf);
+                        context.paramsList.computeIfAbsent(table.root.name, k -> new LinkedList<>()).add(interf);
                         paramsSet = true;
                     } else {
                         instructionValue = value;
@@ -119,7 +114,7 @@ class InsertBlockParser implements Function<Parser, InsertBlock> {
                 boolean hasNext = m.group(newID) != null;
                 multiple |= hasNext;
                 if (paramsSet && multiple) {
-                    throw new ParseException("Unable to use more than one values list per" + " insertion when using params");
+                    throw new ParseException("Unable to use more than one values list per insertion when using params");
                 }
                 if (!hasNext) {
                     break;

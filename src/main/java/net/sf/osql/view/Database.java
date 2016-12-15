@@ -27,7 +27,7 @@ public class Database implements IDatabase {
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    Document getTableDocument(Table table) {
+    public Document getTableDocument(Table table) {
         String name = table.name;
         Document document = tableDocuments.get(name);
         if (document != null)

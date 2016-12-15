@@ -2,6 +2,7 @@ package net.sf.osql.model;
 
 public class Column implements Cloneable {
 
+
     public static class Kernel {
         public String name;
         public String type;
@@ -18,6 +19,8 @@ public class Column implements Cloneable {
     public final boolean unique;
     public final String defaultValue;
     public final String comment;
+    public final Table definer;
+    public final boolean isAbstract;
 
     private final Kernel k;
     private boolean _present;
@@ -34,19 +37,37 @@ public class Column implements Cloneable {
             Table containerTable,
             String defaultValue,
             String comment,
-            boolean inherit
+            boolean inherit,
+            boolean isAbstract
+    ) {
+		this(k, nullable, composition, unique, containerTable, defaultValue, comment, inherit, false, true, isAbstract);
+	}
+	public Column(
+            Kernel k,
+            boolean nullable,
+            boolean composition,
+            boolean unique,
+            Table containerTable,
+            String defaultValue,
+            String comment,
+            boolean inherit,
+            boolean redefined,
+            boolean present,
+            boolean isAbstract
     ) {
         this.sname = k.name;
         this.nullable = nullable;
         this._composition = composition;
         this.unique = unique;
         this._container = containerTable;
+        this.definer = containerTable;
         this.defaultValue = defaultValue;
         this.comment = comment;
         this._inherit = inherit;
         this.k = k;
-        this._present = true;
-        this._new = true;
+        this._present = present;
+        this._new = !redefined;
+        this.isAbstract = isAbstract;
     }
 
     public boolean isPresent() {
@@ -79,12 +100,16 @@ public class Column implements Cloneable {
 
     public Table getTable() { return k.table; }
 
+    public Column implement(Table container) {
+        return new Column(k,nullable,_composition,unique,container,defaultValue,comment,_inherit,!_new,_present,false);
+    }
+
     public Column clone(Table container) {
         try {
             Column child = (Column) super.clone();
             child._new = false;
             child._container = container;
-            if(!_inherit) {
+            if(!isAbstract && !_inherit) {
                 child._present = false;
                 child._inherit = false;
                 child._composition = false;

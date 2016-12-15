@@ -2,6 +2,7 @@ package net.sf.osql.model;
 
 import java.util.*;
 
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class Table {
 
     public static class Event {
@@ -26,14 +27,27 @@ public class Table {
     private final Event delete;
 
     public static class Kernel {
-        private class UnmodiableListHashMap<K, V> extends HashMap<K, List<V>> {
+        private class UnmodifiableListHashMap<K, V> extends HashMap<K, List<V>> {
+            private Map<K, List<V>> unmodifiableListHashMap = new HashMap<>();
             @Override
             public List<V> put(K key, List<V> value) {
-                return super.put(key, Collections.unmodifiableList(value));
+                unmodifiableListHashMap.put(key, Collections.unmodifiableList(value));
+                return super.put(key, value);
             }
-        };
-        public final Map<String, List<Column>> keys = new UnmodiableListHashMap<>();
-        public final Map<String, List<Column>> uniques = new UnmodiableListHashMap<>();
+        }
+        private final Map<String, List<Column>> keys;
+        private final Map<String, List<Column>> uniques;
+        public final Map<String, List<Column>> keysManager;
+        public final Map<String, List<Column>> uniquesManager;
+
+        public Kernel() {
+            UnmodifiableListHashMap<String, Column> keys = new UnmodifiableListHashMap<>();
+            UnmodifiableListHashMap<String, Column> uniques = new UnmodifiableListHashMap<>();
+            this.keysManager = keys;
+            this.uniquesManager = uniques;
+            this.keys = Collections.unmodifiableMap(keys.unmodifiableListHashMap);
+            this.uniques = Collections.unmodifiableMap(uniques.unmodifiableListHashMap);
+        }
     }
 
     private final int[] ibfk;
@@ -53,7 +67,6 @@ public class Table {
     public final Map<String, Column> columns;
     public final Map<String, Params> paramsMap;
 
-    private final Kernel k;
     public final Map<String, List<Column>> keys;
     public final Map<String, List<Column>> uniques;
 
@@ -98,9 +111,8 @@ public class Table {
         this.interfaces = Collections.unmodifiableMap(interfaces);
         this.columns = Collections.unmodifiableMap(columns);
         this.paramsMap = Collections.unmodifiableMap(paramsMap);
-        this.k = kernel;
-        this.keys = Collections.unmodifiableMap(kernel.keys);
-        this.uniques = Collections.unmodifiableMap(kernel.uniques);
+        this.keys = kernel.keys;
+        this.uniques = kernel.uniques;
         this.root = from == null ? this : from.root;
     }
 

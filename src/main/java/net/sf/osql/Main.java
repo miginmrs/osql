@@ -5,7 +5,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import net.sf.osql.model.IDatabaseManager;
 import net.sf.osql.model.Table;
+import net.sf.osql.model.DatabaseManager;
 import net.sf.osql.parser.FieldParser;
 import net.sf.osql.parser.Parser;
 import net.sf.osql.parser.TableParser;
@@ -19,9 +21,9 @@ public class Main {
     private static final Pattern END_PATTERN = Pattern.compile("\\s*$");
     private static List<Table> getTables(String content) {
         Parser t = new Parser(content);
-        TableParser.Database database = new TableParser.Database();
-        TableParser tableParser = new TableParser("class", new FieldParser(true), false, database);
-        TableParser interfaceParser = new TableParser("@interface", new FieldParser(true), true, database);
+        IDatabaseManager dbManager = new DatabaseManager();
+        TableParser tableParser = new TableParser("class", new FieldParser(true), false, dbManager);
+        TableParser interfaceParser = new TableParser("@interface", new FieldParser(true), true, dbManager);
         List<Table> tabs = new LinkedList<>();
         while(true) {
             try{

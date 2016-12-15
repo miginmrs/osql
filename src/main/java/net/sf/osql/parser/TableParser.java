@@ -1,19 +1,10 @@
 package net.sf.osql.parser;
 
-import net.sf.osql.model.DollarValue;
-import net.sf.osql.model.EventData;
-import net.sf.osql.model.Params;
-import net.sf.osql.model.Table;
+import net.sf.osql.model.*;
+
 import static net.sf.osql.model.Table.Event;
-import net.sf.osql.model.Field;
-import net.sf.osql.model.Column;
-import net.sf.osql.model.InsertBlock;
-import net.sf.osql.model.Constraint;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,39 +42,12 @@ public class TableParser implements Function<Parser, Table> {
     private static final EventParser eventParser = new EventParser();
     private static final CommentParser commentParser = new CommentParser();
 
-    private static class TableManager {
-        private final int[] ibfk;
-        private final int[] auto_inc;
-        private final int[] users;
-        private final Map<String, Column.Kernel> kernels = new HashMap<>();
-        private final Table.Kernel kernel;
-        private final List<Constraint> constraints = new LinkedList<>();
-        private final List<Constraint> externs = new LinkedList<>();
-        private final List<Table> subtypes = new LinkedList<>();
-        private final List<Column> hardlinks = new LinkedList<>();
-
-        TableManager(boolean child, int[] auto_inc) {
-            this.ibfk = new int[] {child ? 1 : 0};
-            this.auto_inc = auto_inc;
-            this.users = new int[1];
-            this.kernel = new Table.Kernel();
-        }
-    }
-
-    public static class Database {
-        private final Map<String, TableManager> tableManagers = new HashMap<>();
-        private final DollarValue.Context dollarValueContext = new DollarValue.Context();
-        private final Map<String, Table> tables = new HashMap<>();
-        private final Map<String, List<Column>> waiting = new HashMap<>();
-        private final Map<String, Table> interfaces = new HashMap<>();
-    }
-
     private final String type;
     private final FieldParser fieldParser;
     private final boolean isAbstract;
-    private final Database database;
+    private final IDatabaseManager database;
 
-    public TableParser(String type, FieldParser fieldParser, boolean isAbstract, Database database) {
+    public TableParser(String type, FieldParser fieldParser, boolean isAbstract, IDatabaseManager database) {
         this.type = type;
         this.fieldParser = fieldParser;
         this.isAbstract = isAbstract;
@@ -113,7 +77,7 @@ public class TableParser implements Function<Parser, Table> {
                 }
                 local = t.mark();
                 String paramsName = m.group(nameID);
-                Table paramsTable = database.interfaces.get(paramsName);
+                Table paramsTable = database.getInterfaces().get(paramsName);
                 if (paramsTable == null) {
                     throw new ParseException("Params table " + paramsName + " not fount");
                 }
@@ -129,7 +93,7 @@ public class TableParser implements Function<Parser, Table> {
                         String value = m.group(valueID);
                         Object instructionValue;
                         if (value.startsWith("$")) {
-                            instructionValue = DollarValue.get(database.dollarValueContext, value.substring(1));
+                            instructionValue = DollarValue.get(database.getDollarValueContext(), value.substring(1));
                         } else {
                             instructionValue = value;
                         }
@@ -149,12 +113,12 @@ public class TableParser implements Function<Parser, Table> {
             }
             String name = m.group(nameID);
             String from = m.group(fromID);
-            if (database.tableManagers.containsKey(name)) {
+            if (database.getTableManagers().containsKey(name)) {
                 throw new Exception("table " + name + " already defined");
             }
             Table fromTable = null;
             if (from != null) {
-                fromTable = (isAbstract ? database.interfaces : database.tables).get(from);
+                fromTable = (isAbstract ? database.getInterfaces() : database.getTables()).get(from);
             }
             if (from != null && fromTable == null) {
                 throw new Exception(from + " not found");
@@ -189,18 +153,18 @@ public class TableParser implements Function<Parser, Table> {
                         throw new ParseException("Inherited params field " + param + " defined for " + params.type.name + " is not initialised");
                     }
                 }
-                database.tableManagers.get(params.type.name).users[0]++;
+                database.getTableManagers().get(params.type.name).getUsers()[0]++;
             }
             Map<String, Column> columns = new HashMap<>();
             Map<String, Table> interfaces = new HashMap<>();
-            Map<String, List<Column>> keys = new HashMap<>();
-            Map<String, List<Column>> uniques = new HashMap<>();
             List<InsertBlock> insertions = new LinkedList<>();
             Event insert = new Event();
             Event update = new Event();
             Event delete = new Event();
-            TableManager tableManager = new TableManager(fromTable != null, fromTable == null ? new int[]{1} : database.tableManagers.get(fromTable.name).auto_inc);
-            database.tableManagers.put(name, tableManager);
+            ITableManager tableManager = new TableManager(fromTable != null, fromTable == null ? new int[]{0} : database.getTableManagers().get(fromTable.name).getAuto_inc());
+            database.getTableManagers().put(name, tableManager);
+            Map<String, List<Column>> keys = tableManager.getKeys();
+            Map<String, List<Column>> uniques = tableManager.getUniques();
             Table table = new Table(
                     sql,
                     name,
@@ -210,23 +174,23 @@ public class TableParser implements Function<Parser, Table> {
                     insert,
                     update,
                     delete,
-                    tableManager.ibfk,
-                    tableManager.auto_inc,
-                    tableManager.users,
+                    tableManager.getIbfk(),
+                    tableManager.getAuto_inc(),
+                    tableManager.getUsers(),
                     insertions,
-                    tableManager.constraints,
-                    tableManager.externs,
-                    tableManager.subtypes,
-                    tableManager.hardlinks,
+                    tableManager.getConstraints(),
+                    tableManager.getExterns(),
+                    tableManager.getSubtypes(),
+                    tableManager.getHardlinks(),
                     interfaces,
                     columns,
                     paramsMap,
-                    tableManager.kernel
+                    tableManager.getKernel()
             );
             String interfaceNames = m.group(interfacesID);
             if (interfaceNames != null) {
                 for (String interfaceName : interfaceNames.split("\\s*,\\s*")) {
-                    Table interf = database.interfaces.get(interfaceName);
+                    Table interf = database.getInterfaces().get(interfaceName);
                     if (interf == null) {
                         throw new ParseException("Interface " + interfaceName + " used for " + name + " is not found");
                     }
@@ -236,13 +200,13 @@ public class TableParser implements Function<Parser, Table> {
             if (fromTable != null) {
                 fromTable.columns.values().forEach(column -> {
                     columns.put(column.sname, column.clone(table));
-                    tableManager.kernels.put(column.sname, database.tableManagers.get(from).kernels.get(column.sname));
+                    tableManager.getKernels().put(column.sname, database.getTableManagers().get(from).getKernels().get(column.sname));
                 });
                 fromTable.constraints.stream().filter(c->c.column.isComposition() && c.column.isInherit()).forEach(constraint->
-                    tableManager.constraints.add(new Constraint(constraint.column, constraint.references, true, ++tableManager.ibfk[0]))
+                    tableManager.getConstraints().add(new Constraint(constraint.column, constraint.references, true, ++tableManager.getIbfk()[0]))
                 );
             }
-            InsertBlockParser blockParser = new InsertBlockParser(table, database.dollarValueContext, tableManager.auto_inc);
+            InsertBlockParser blockParser = new InsertBlockParser(table, database.getDollarValueContext(), tableManager.getAuto_inc());
             //fields
             if (fromTable != null) {
                 Map<String, List<Column>> in, out;
@@ -272,8 +236,9 @@ public class TableParser implements Function<Parser, Table> {
                         throw new ParseException(e.getCause().getMessage() + "\n" + msg);
                     }
                     Column.Kernel kernel = new Column.Kernel(field.name, field.type);
-                    Column col = new Column(kernel, field.nullable, field.composition, field.isunique && field.keyname == null, table, field.defaultValue, field.comment, field.inherited);
-                    Table typeTable = database.tables.get(field.type);
+                    Column cloned = table.columns.get(field.name);
+                    Column col = new Column(kernel, field.nullable, field.composition, field.isunique && field.keyname == null, table, field.defaultValue, field.comment, field.inherited, cloned != null, true, this.isAbstract);
+                    Table typeTable = database.getTables().get(field.type);
                     if (typeTable != null) {
                         kernel.name = kernel.type + "." + col.sname;
                         kernel.type = idType;
@@ -282,14 +247,13 @@ public class TableParser implements Function<Parser, Table> {
                             if(typeTable.dependent) {
                                 Table referenced = typeTable;
                                 do  {
-                                    database.tableManagers.get(referenced.name).hardlinks.add(col);
+                                    database.getTableManagers().get(referenced.name).getHardlinks().add(col);
                                     referenced = referenced.from;
                                 } while(referenced!=null && referenced.dependent);
                             }
                             else throw new ParseException("Table '"+typeTable.name+"' is not dependent");
-                        tableManager.constraints.add(new Constraint(col, typeTable, true, ++tableManager.ibfk[0]));
+                        tableManager.getConstraints().add(new Constraint(col, typeTable, true, ++tableManager.getIbfk()[0]));
                     }
-                    Column cloned = table.columns.get(col.sname);
                     if(cloned != null) {
                         if (!cloned.isPresent()) {
                             throw new Exception("Column " + col.sname + " cannot be redifined");
@@ -299,15 +263,10 @@ public class TableParser implements Function<Parser, Table> {
                         }
                     }
                     columns.put(col.sname, col);
-                    tableManager.kernels.put(col.sname, kernel);
+                    tableManager.getKernels().put(col.sname, kernel);
                     if (field.keyname != null) {
                         Map<String, List<Column>> map = field.isunique ? uniques : keys;
-                        List<Column> keyColumns = map.get(field.keyname);
-                        if (keyColumns == null) {
-                            keyColumns = new LinkedList<>();
-                            map.put(field.keyname, keyColumns);
-                        }
-                        keyColumns.add(col);
+                        map.computeIfAbsent(field.keyname, k -> new LinkedList<>()).add(col);
                     }
                 }
             } catch (ParseException e) {
@@ -316,18 +275,18 @@ public class TableParser implements Function<Parser, Table> {
             if(table.dependent) {
                 Column.Kernel $ref = new Column.Kernel("$ref", "text");
                 Column.Kernel $rid = new Column.Kernel("$rid", idType);
-                columns.put("$ref", new Column($ref, false, false, false, table, null, null, false));
-                columns.put("$rid", new Column($rid, false, false, false, table, null, null, false));
-                tableManager.kernels.put("$ref", $ref);
-                tableManager.kernels.put("$rid", $rid);
+                columns.put("$ref", new Column($ref, false, false, false, table, null, null, false, false, false, isAbstract));
+                columns.put("$rid", new Column($rid, false, false, false, table, null, null, false, false, false, isAbstract));
+                tableManager.getKernels().put("$ref", $ref);
+                tableManager.getKernels().put("$rid", $rid);
             }
             for (Table interf : interfaces.values()) {
                 for (Map.Entry<String, Column> entry : interf.columns.entrySet()) {
                     String colName = entry.getKey();
-                    Column col = entry.getValue().clone(table);
+                    Column col = entry.getValue().implement(table);
                     Column defined = columns.putIfAbsent(colName, col);
                     if(defined == null) {
-                        tableManager.kernels.put(col.sname, database.tableManagers.get(interf.name).kernels.get(col.sname));
+                        tableManager.getKernels().put(col.sname, database.getTableManagers().get(interf.name).getKernels().get(col.sname));
                     } else if(!defined.isPresent()) {
                         throw new ParseException("Declared field " + colName + " in interface " + interf.name + " is disallowed in table" + name);
                     }
@@ -389,26 +348,23 @@ public class TableParser implements Function<Parser, Table> {
             t.parseWithPattern(endPattern);
             //created
             if (fromTable != null) {
-                database.tableManagers.get(from).subtypes.add(table);
+                database.getTableManagers().get(from).getSubtypes().add(table);
             }
             for (Map.Entry<String, Column> entry : columns.entrySet()) {
                 Column col = entry.getValue();
                 String colName = entry.getKey();
-                Column.Kernel kernel = tableManager.kernels.get(colName);
+                Column.Kernel kernel = tableManager.getKernels().get(colName);
                 if((col.isComposition() || col.isNew()) && kernel.table == null) {
-                    List<Column> list = database.waiting.get(kernel.type);
-                    if (list == null) {
-                        list = new LinkedList<>();
-                        database.waiting.put(kernel.type, list);
-                    }
-                    list.add(col);
+                    database.getWaiting()
+                            .computeIfAbsent(kernel.type, k -> new LinkedList<>())
+                            .add(col);
                 }
             }
-            List<Column> waitingForMe = database.waiting.remove(name);
+            List<Column> waitingForMe = database.getWaiting().remove(name);
             if (waitingForMe != null) {
                 for (Column col : waitingForMe) {
                     assert col.isNew() || col.isComposition();
-                    Column.Kernel kernel = database.tableManagers.get(col.getContainer().name).kernels.get(col.sname);
+                    Column.Kernel kernel = database.getTableManagers().get(col.getContainer().name).getKernels().get(col.sname);
                     if(kernel.table == null) {
                         kernel.name = kernel.type + "." + col.sname;
                         kernel.type = idType;
@@ -416,15 +372,15 @@ public class TableParser implements Function<Parser, Table> {
                     }
                     if(col.isComposition())
                         if(table.dependent)
-                            tableManager.hardlinks.add(col);
+                            tableManager.getHardlinks().add(col);
                         else throw new ParseException("Table '"+table.name+"' is not dependent");
-                    TableManager manager = database.tableManagers.get(col.getContainer().name);
-                    Constraint constraint = new Constraint(col, table, false, ++manager.ibfk[0]);
-                    manager.constraints.add(constraint);
-                    manager.externs.add(constraint);
+                    ITableManager manager = database.getTableManagers().get(col.getContainer().name);
+                    Constraint constraint = new Constraint(col, table, false, ++manager.getIbfk()[0]);
+                    manager.getConstraints().add(constraint);
+                    manager.getExterns().add(constraint);
                 }
             }
-            (isAbstract ? database.interfaces : database.tables).put(name, table);
+            (isAbstract ? database.getInterfaces() : database.getTables()).put(name, table);
             return table;
         } catch (RuntimeException ex) {
             t.rewind(point);
@@ -444,6 +400,7 @@ public class TableParser implements Function<Parser, Table> {
             if (insertionException != null) {
                 err += "\ninsertion : " + insertionException.getMessage();
             }
+			if(err.length()==0) err = ex.getMessage();
             throw new RuntimeException(err, ex);
         }
     }

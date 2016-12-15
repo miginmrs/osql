@@ -16,11 +16,6 @@
             <xslm:value-of select="/table/triggers/trigger[@event=$link]"/>
         </ctx:use>
         <ctx:use name="into"><xslm:value-of select="/table/insertions/@into"/></ctx:use>
-        <ctx:list name="inherits">
-            <xsli:for-each select="/table/columns/column[@inherit='true']">
-                <ctx:item><xslm:value-of select="concat(@name,'.',$v_inherit)"/></ctx:item>
-            </xsli:for-each>
-        </ctx:list>
     </ctx:default-context>
     <ctx:context name="table" path="/table">
         <ctx:attribute name="name" path="@name"/>
@@ -36,7 +31,7 @@
         <ctx:link name="notnull" test="@abstract='true'"/>
         <ctx:link name="concrete" test="not(@abstract='true')"/>
         <!-- default is hard -->
-        <ctx:link name="verify-inherited" test="not($ctx_properties/property[@name='mode' and @value='soft']) and columns/column[@inherit='true']"/>
+        <ctx:link name="verify-inherited" test="not($ctx_properties/d:property[@name='mode' and @value='soft']) and columns/column[@inherit='true']"/>
         <ctx:link name="compositions" test="columns/column[@composition='true']"/>
         <ctx:link name="inherit" test="columns/column[@inherit='true']"/>
         <ctx:link name="before:insert" section="triggers" test="true()"/>
@@ -63,17 +58,18 @@
             </xsli:for-each>
         </ctx:list>
     </ctx:context>
-    <ctx:context name="subtype" parent="table" path="subtypes/subtype">
+    <ctx:context name="subtype" parent="table" path="subtypes/subtype" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
     </ctx:context>
-    <ctx:context name="sibling" parent="table" path="siblings/sibling">
+    <ctx:context name="sibling" parent="table" path="siblings/sibling" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
     </ctx:context>
-    <ctx:context name="column" parent="table" path="columns/column">
+    <ctx:context name="column" parent="table" path="columns/column" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:attribute name="table" path="@table"/>
+        <ctx:attribute name="definer" path="@definer"/>
         <ctx:attribute name="present" path="@present"/>
         <ctx:attribute name="type" path="@type"/>
         <ctx:attribute name="null" path="@null"/>
@@ -98,7 +94,7 @@
         <ctx:use name="default"><xslm:value-of select="@default"/></ctx:use>
         <ctx:use name="comment"><xslm:value-of select="@comment"/></ctx:use>
     </ctx:context>
-    <ctx:context name="link" parent="table" path="links/column">
+    <ctx:context name="link" parent="table" path="links/column" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:attribute name="sname" path="@sname"/>
         <ctx:attribute name="table" path="@table"/>
@@ -106,7 +102,7 @@
         <ctx:use name="sname"><xslm:value-of select="@sname"/></ctx:use>
         <ctx:use name="table"><xslm:value-of select="@table"/></ctx:use>
     </ctx:context>
-    <ctx:context name="index" parent="table" path="index/list">
+    <ctx:context name="index" parent="table" path="index/list" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
         <ctx:list name="columns">
@@ -115,7 +111,7 @@
             </xsli:for-each>
         </ctx:list>
     </ctx:context>
-    <ctx:context name="unique" parent="table" path="unique/list">
+    <ctx:context name="unique" parent="table" path="unique/list" length="2">
         <ctx:attribute name="name" path="@name"/>
         <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
         <ctx:list name="columns">
@@ -130,7 +126,7 @@
     <ctx:context name="unique_column" parent="unique" path="column" length="1">
         <ctx:attribute name="name" path="@name"/>
     </ctx:context>
-    <ctx:context name="constraint" parent="table" path="constraints/constraint">
+    <ctx:context name="constraint" parent="table" path="constraints/constraint" length="2">
         <ctx:attribute name="number" path="@number"/>
         <ctx:attribute name="reference" path="@reference"/>
         <ctx:attribute name="target" path="@target"/>
@@ -141,9 +137,9 @@
         <ctx:use name="reference"><xslm:value-of select="@reference"/></ctx:use>
         <ctx:use name="target"><xslm:value-of select="@target"/></ctx:use>
     </ctx:context>
-    <ctx:context name="insertion" parent="table" path="insertions/insertion">
+    <ctx:context name="insertion" parent="table" path="insertions/insertion" length="2">
     </ctx:context>
-    <ctx:context name="entry" parent="insertion" path="/table/path/entry | entry">
+    <ctx:context name="entry" parent="insertion" path="/table/path/entry | entry" length="1">
         <ctx:attribute name="name" path="@name"/>
         <ctx:use name="name"><xslm:value-of select="@name"/></ctx:use>
         <ctx:use name="string"><xslm:value-of select="@string"/></ctx:use>

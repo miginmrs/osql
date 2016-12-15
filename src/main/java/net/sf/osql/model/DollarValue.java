@@ -20,12 +20,7 @@ public class DollarValue {
     public final String name;
 
     public static DollarValue get(Context context, String name) {
-        DollarValue dollarValue = context.dollarValues.get(name);
-        if (dollarValue == null) {
-            dollarValue = new DollarValue(context, name);
-            context.dollarValues.put(name, dollarValue);
-        }
-        return dollarValue;
+        return context.dollarValues.computeIfAbsent(name, k -> new DollarValue(context, name));
     }
 
     /**
