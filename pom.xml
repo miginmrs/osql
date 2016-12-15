@@ -4,7 +4,7 @@
   <groupId>net.sf.osql</groupId>
   <artifactId>osql</artifactId>
   <packaging>jar</packaging>
-  <version>1.1</version>
+  <version>1.2</version>
   <name>osql</name>
   <url>http://maven.apache.org</url>
   <properties>
@@ -83,7 +83,7 @@
     <dependency>
       <groupId>net.sf.xsltiny</groupId>
       <artifactId>xsltiny</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
     </dependency>
     <dependency>
       <groupId>net.sf.saxon</groupId>
